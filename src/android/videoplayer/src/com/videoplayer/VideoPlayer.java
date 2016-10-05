@@ -63,11 +63,11 @@ public class VideoPlayer {
     public VideoPlayer(Context context, SubtitleView subtitleView) {
         this.context = context;
         mainHandler = new Handler();
+        userAgent = Util.getUserAgent(context, "mvtv_phone");
         mediaDataSourceFactory = buildDataSourceFactory(true);
         shouldRestorePosition = true;
         componentListener = new ComponentListener();
         subtitleLayout = subtitleView;
-        userAgent = Util.getUserAgent(context, "mvtv_phone");
     }
 
     public void init(String uriString, SurfaceView surfaceView) {
