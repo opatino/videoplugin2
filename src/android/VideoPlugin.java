@@ -180,14 +180,6 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
 
                     urlPlaying = url;
                     Log.i(LOGTAG, "url: " + url);
-                    if (playerAudio != null) {
-                        playerAudio.release();
-                        playerAudio = null;
-                    }
-                    if (player != null) {
-                        player.release();
-                        player = null;
-                    }
                     player.init(url, surfaceView_live);
                 }
             });
