@@ -133,6 +133,7 @@ public class VideoPlayer {
 
     public void release() {
         player.release();
+        player = null;
     }
 
     public void stop() {
