@@ -231,9 +231,6 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
                     }
                     urlPlaying = url;
                     Log.i(LOGTAG, "url: " + url);
-                    if (player != null) {
-                        player.release();
-                    }
                     player.init(url, surfaceView_live);
                 }
             });
@@ -309,9 +306,6 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
             codecMpeg123 = false;
             final String url = args.getString(0);
             urlPlaying = url;
-            if (player != null) {
-                player.release();
-            }
             player.init(url, surfaceView_live);
             return true;
 //        } else if (action.equals("pauseAudio")) {
