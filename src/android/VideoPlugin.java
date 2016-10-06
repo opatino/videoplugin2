@@ -15,6 +15,7 @@ import com.videoplayer.VideoPlayer;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PluginResult;
 import org.apache.cordova.engine.SystemWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -426,10 +427,19 @@ public class VideoPlugin extends CordovaPlugin implements VideoPlayer.EventListe
             String event = args.getString(0);
             if (event.equals("OnStateChanged")) {
                 onStateChangedCallbackContext = callbackContext;
+                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, "registered");
+                pluginResult.setKeepCallback(true);
+                onStateChangedCallbackContext.sendPluginResult(pluginResult);
             } else if (event.equals("OnError")) {
                 onErrorCallbackContext = callbackContext;
+                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, "registered");
+                pluginResult.setKeepCallback(true);
+                onErrorCallbackContext.sendPluginResult(pluginResult);
             } else if (event.equals("OnTrackChanged")) {
                 onTrackChangedCallbackContext = callbackContext;
+                PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, "registered");
+                pluginResult.setKeepCallback(true);
+                onTrackChangedCallbackContext.sendPluginResult(pluginResult);
             } else {
                 callbackContext.error("unknown event");
             }
@@ -443,18 +453,25 @@ public class VideoPlugin extends CordovaPlugin implements VideoPlayer.EventListe
 
     @Override
     public void onPlayerStateChanged(String state) {
-        onStateChangedCallbackContext.success();
+        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, state);
+        pluginResult.setKeepCallback(true);
+        onStateChangedCallbackContext.sendPluginResult(pluginResult);
     }
 
     @Override
     public void onPlayerError() {
-        onErrorCallbackContext.success();
+        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, "Error");
+        pluginResult.setKeepCallback(true);
+        onErrorCallbackContext.sendPluginResult(pluginResult);
     }
 
     @Override
     public void onTrackChanged() {
-        onTrackChangedCallbackContext.success();
+        PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, "Track Changed");
+        pluginResult.setKeepCallback(true);
+        onTrackChangedCallbackContext.sendPluginResult(pluginResult);
     }
 
 }
+
 

@@ -88,7 +88,7 @@ public class VideoPlayer implements ExoPlayer.EventListener,
             TrackSelection.Factory videoTrackSelectionFactory =
                     new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER);
             trackSelector = new DefaultTrackSelector(mainHandler, videoTrackSelectionFactory);
-//        trackSelector.addListener(this);
+            trackSelector.addListener(this);
             trackSelector.addListener(eventLogger);
             player = ExoPlayerFactory.newSimpleInstance(context, trackSelector, new DefaultLoadControl(),
                     drmSessionManager, false); //prefer extension decoders false
