@@ -1,55 +1,14 @@
 package com.movistar.tvsindesco.cordova.plugin;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Handler;
-import android.os.SystemClock;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
-import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
-import android.webkit.WebView;
-import android.text.TextUtils;
 
-
-
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.Timeline;
-import com.google.android.exoplayer2.EventLogger;
-import com.google.android.exoplayer2.drm.DrmSessionManager;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.TrackGroup;
-import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.source.dash.DashMediaSource;
-import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.source.smoothstreaming.DefaultSsChunkSource;
-import com.google.android.exoplayer2.source.smoothstreaming.SsMediaSource;
-import com.google.android.exoplayer2.text.Cue;
-import com.google.android.exoplayer2.text.TextRenderer;
-import com.google.android.exoplayer2.trackselection.AdaptiveVideoTrackSelection;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.FixedTrackSelection;
 import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.ui.SubtitleView;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
-import com.google.android.exoplayer2.upstream.HttpDataSource;
-import com.google.android.exoplayer2.util.Util;
 
 import com.movistar.tvsindesco.MainActivity;
 import com.videoplayer.VideoPlayer;
@@ -61,22 +20,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.File;
-import java.util.List;
 
 
 /**
  * Created by juan.fernandezfraile on 12/01/2016.
  */
-public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListener{
+public class VideoPlugin extends CordovaPlugin implements VideoPlayer.EventListener {
     private static final String LOGTAG = "LogsAndroid";
     static Context context = MainActivity.getContext();
-    static String userAgent = Util.getUserAgent(context, "mvtv_phone");
-    private static VideoPlayer player;
-    private static SimpleExoPlayer playerAudio;
+    private VideoPlayer player;
+    private static VideoPlayer playerAudio;
     static String urlPlaying;
     public static String LA_URL = "";
     public static String token = "";
-    private static EventLogger eventLogger;
     static boolean errorDRM = false;
     static boolean errorNotFileDRM = false;
 //    static Surface surface_live = MainActivity.getSurfaceView_live();
@@ -85,9 +41,6 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
     static boolean codecMpeg123 = false;
 //    static SimpleExoPlayerView simple_view = MainActivity.getSimpleExoplayerView();
     static SubtitleView subtitleLayout;
-
-
-    private static final TrackSelection.Factory FIXED_FACTORY = new FixedTrackSelection.Factory();
 	
     static int PLAYING_LIVE = 0;
     static int PLAYING_RTSP = 1;
@@ -99,8 +52,17 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
 
     static int currentPlay;
 
+    CallbackContext onErrorCallbackContext = null;
+    CallbackContext onTrackChangedCallbackContext = null;
+    CallbackContext onStateChangedCallbackContext = null;
 
-    public static void forcePause() {
+
+    public VideoPlugin() {
+        player = new VideoPlayer(MainActivity.getContext(), MainActivity.getSubtitleView(), this);
+    }
+
+
+    public void forcePause() {
         if (player != null) {
             player.release();
         }
@@ -109,7 +71,7 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
         }
     }
 
-    public static void forceResume() {
+    public void forceResume() {
 //        if (currentPlay == PLAYING_LIVE) {
 //            player = new DemoPlayer(new ExtractorRendererBuilder(context, userAgent, Uri.parse(urlPlaying)));
 //
@@ -180,7 +142,7 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
 
                     urlPlaying = url;
                     Log.i(LOGTAG, "url: " + url);
-                    player.init(url, surfaceView_live);
+                    player.init(url, MainActivity.getSurfaceView_live());
                 }
             });
 
@@ -231,6 +193,9 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
                     }
                     urlPlaying = url;
                     Log.i(LOGTAG, "url: " + url);
+                    if (player != null) {
+                        player.release();
+                    }
                     player.init(url, surfaceView_live);
                 }
             });
@@ -306,6 +271,9 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
             codecMpeg123 = false;
             final String url = args.getString(0);
             urlPlaying = url;
+            if (player != null) {
+                player.release();
+            }
             player.init(url, surfaceView_live);
             return true;
 //        } else if (action.equals("pauseAudio")) {
@@ -430,7 +398,7 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
                 cordova.getActivity().runOnUiThread(new Runnable() {
                     public void run() {
                         surfaceView_live.setLayoutParams(lp);
-                        MainActivity.getVideoFrame().bringToFront();
+//                        MainActivity.getVideoFrame().bringToFront();
                     }
                 });
 
@@ -448,69 +416,45 @@ public class VideoPlugin extends CordovaPlugin implements ExoPlayer.EventListene
             }
             return true;
         } else if (action.equals("muteVideo")) {
-            if(args.getString(0).equals("1")) {
+            if (args.getString(0).equals("1")) {
                 player.setVolume(0);
-            }else{
+            } else {
                 player.setVolume(0);
             }
             return true;
+        } else if (action.equals("registerCallback")) {
+            String event = args.getString(0);
+            if (event.equals("OnStateChanged")) {
+                onStateChangedCallbackContext = callbackContext;
+            } else if (event.equals("OnError")) {
+                onErrorCallbackContext = callbackContext;
+            } else if (event.equals("OnTrackChanged")) {
+                onTrackChangedCallbackContext = callbackContext;
+            } else {
+                callbackContext.error("unknown event");
+            }
         } else {
             return false;
         }
+        return true;
     }
 
-    //Exoplayer.EventListener implementation
+    //VideoPlayer.EventListener implementation
 
     @Override
-    public void onLoadingChanged(boolean isLoading) {
-        // Do nothing.
-    }
-
-    @Override
-    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-        // Do nothing.
+    public void onPlayerStateChanged(String state) {
+        onStateChangedCallbackContext.success();
     }
 
     @Override
-    public void onPositionDiscontinuity() {
-        // Do nothing.
+    public void onPlayerError() {
+        onErrorCallbackContext.success();
     }
 
     @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest) {
-        // Do nothing.
+    public void onTrackChanged() {
+        onTrackChangedCallbackContext.success();
     }
 
-    @Override
-    public void onPlayerError(ExoPlaybackException e) {
-//        String errorString = null;
-//        if (e.type == ExoPlaybackException.TYPE_RENDERER) {
-//            Exception cause = e.getRendererException();
-//            if (cause instanceof MediaCodecRenderer.DecoderInitializationException) {
-//                // Special case for decoder initialization failures.
-//                MediaCodecRenderer.DecoderInitializationException decoderInitializationException =
-//                        (MediaCodecRenderer.DecoderInitializationException) cause;
-//                if (decoderInitializationException.decoderName == null) {
-//                    if (decoderInitializationException.getCause() instanceof MediaCodecUtil.DecoderQueryException) {
-//                        errorString = getString(R.string.error_querying_decoders);
-//                    } else if (decoderInitializationException.secureDecoderRequired) {
-//                        errorString = getString(R.string.error_no_secure_decoder,
-//                                decoderInitializationException.mimeType);
-//                    } else {
-//                        errorString = getString(R.string.error_no_decoder,
-//                                decoderInitializationException.mimeType);
-//                    }
-//                } else {
-//                    errorString = getString(R.string.error_instantiating_decoder,
-//                            decoderInitializationException.decoderName);
-//                }
-//            }
-//        }
-//        if (errorString != null) {
-//            showToast(errorString);
-//        }
-//        playerNeedsSource = true;
-//        updateButtonVisibilities();
-//        showControls();
-    }
 }
+

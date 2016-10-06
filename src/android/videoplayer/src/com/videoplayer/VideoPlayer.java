@@ -5,14 +5,16 @@ import android.os.Handler;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.Surface;
 import android.view.SurfaceView;
 
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.drm.DrmSessionManager;
 import com.google.android.exoplayer2.source.TrackGroup;
 import com.google.android.exoplayer2.source.TrackGroupArray;
@@ -42,7 +44,14 @@ import com.google.android.exoplayer2.util.Util;
 
 import java.util.List;
 
-public class VideoPlayer {
+public class VideoPlayer implements ExoPlayer.EventListener,
+        MappingTrackSelector.EventListener {
+
+    public interface EventListener {
+        void onPlayerStateChanged(String state);
+        void onPlayerError();
+        void onTrackChanged();
+    }
 
     private static final String TAG = "VideoPlayer";
     private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
@@ -54,14 +63,16 @@ public class VideoPlayer {
     private boolean shouldRestorePosition;
     private MappingTrackSelector.SelectionOverride override;
     private ComponentListener componentListener;
+    private EventListener listener;
     private EventLogger eventLogger;
     private SubtitleView subtitleLayout;
     String userAgent;
     Context context;
     private static final TrackSelection.Factory FIXED_FACTORY = new FixedTrackSelection.Factory();
 
-    public VideoPlayer(Context context, SubtitleView subtitleView) {
+    public VideoPlayer(Context context, SubtitleView subtitleView, EventListener listener) {
         this.context = context;
+        this.listener = listener;
         mainHandler = new Handler();
         userAgent = Util.getUserAgent(context, "mvtv_phone");
         mediaDataSourceFactory = buildDataSourceFactory(true);
@@ -299,6 +310,57 @@ public class VideoPlayer {
      */
     private HttpDataSource.Factory buildHttpDataSourceFactory(boolean useBandwidthMeter) {
         return new DefaultHttpDataSourceFactory(userAgent, useBandwidthMeter ? BANDWIDTH_METER : null);
+    }
+
+
+    // Exoplayer.EventListener
+
+    @Override
+    public void onLoadingChanged(boolean isLoading) {
+        Log.d(TAG, "loading [" + isLoading + "]");
+    }
+
+    @Override
+    public void onPlayerStateChanged(boolean playWhenReady, int state) {
+        listener.onPlayerStateChanged(getStateString(state));
+    }
+
+    @Override
+    public void onPositionDiscontinuity() {
+        Log.d(TAG, "positionDiscontinuity");
+    }
+
+    @Override
+    public void onTimelineChanged(Timeline timeline, Object manifest) {
+
+    }
+
+    @Override
+    public void onPlayerError(ExoPlaybackException e) {
+        Log.e(TAG, "playerFailed [" + "]", e);
+        listener.onPlayerError();
+    }
+
+//    MappingTrackSelector.listener
+
+    @Override
+    public void onTracksChanged(MappingTrackSelector.TrackInfo trackInfo) {
+        listener.onTrackChanged();
+    }
+
+    private static String getStateString(int state) {
+        switch (state) {
+            case ExoPlayer.STATE_BUFFERING:
+                return "Buffering";
+            case ExoPlayer.STATE_ENDED:
+                return "Ended";
+            case ExoPlayer.STATE_IDLE:
+                return "Idle";
+            case ExoPlayer.STATE_READY:
+                return "Ready";
+            default:
+                return "?";
+        }
     }
 
 }

@@ -94,4 +94,7 @@ module.exports = {
     state: function (str, successCallback, errorCallback) {
         cordova.exec(successCallback, errorCallback, "VideoPlugin", "state", [str]);
     },
+    registerCallback: function (str, successCallback, errorCallback) {
+        cordova.exec(successCallback, errorCallback, "VideoPlugin", "registerCallback", [str]);
+    }
 };
